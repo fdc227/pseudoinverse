@@ -33,7 +33,7 @@ void diagonal_gen(double* a, int n, double* c, int k)
     int lda = n+1;
     for (int i = 0; i < k; i++)
     {
-        a[i*lda] = c[i];
+        a[i*lda+i] = c[i];
     }
 }
 
@@ -60,7 +60,7 @@ void vec_inverse(double* s, int k)
 {
     for(int i=0; i<k; i++)
     {
-        if(s[i] > 1.0e-9)
+        if(abs(s[i]) > 1.0e-9)
             s[i]=1.0/s[i];
         else
             s[i]=s[i];
@@ -71,20 +71,18 @@ void pinv_driver(double* A, int m, int n, int k, double* S, double* Smat, double
 {
     gesvd_driver(A, m, n, S, U, Vt, Superb, info_svd);
     vec_inverse(S, k);
+    vec_zero(Smat, m*n);
     diagonal_gen(Smat, n, S, k);
-    mat_ptr(Smat, m, n);
     vec_zero(USigma, m*n);
     vec_zero(Pinv, m*n);
-    // void cblas_dgemm (const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE transa, const CBLAS_TRANSPOSE transb, const MKL_INT m, const MKL_INT n, const MKL_INT k, const double alpha, const double *a, const MKL_INT lda, const double *b, const MKL_INT ldb, const double beta, double *c, const MKL_INT ldc);
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, m, 1.0, U, m, Smat, n, 1.0, USigma, n);
-    cblas_dgemm(CblasRowMajor, CblasTrans, CblasTrans, n, m, n, 1.0, Vt, n, USigma, n, 1.0, Pinv, m);
-    
+    cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, n, m, n, 1.0, Vt, n, Smat, m, 0.0, USigma, m);
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, n, m, m, 1.0, USigma, m, U, m, 0.0, Pinv, m);
 }
 
 int main(void)
 {
-    int m = 2;
-    int n = 3;
+    int m = 3;
+    int n = 2;
     int k = MINMN(m, n);
     double* U, *Vt, *S, *Superb, *Smat, *Sp, *USigma, *Pinv;
     U = new double[m*m];
@@ -96,28 +94,11 @@ int main(void)
     USigma = new double[m*n];
     Pinv = new double[m*n];
     int info_svd;
-    // double A[6*5] = 
-    // {
-    //     8.79,  9.93,  9.83, 5.45,  3.16,
-    //     6.11,  6.91,  5.04, -0.27,  7.98,
-    //     -9.15, -7.93,  4.86, 4.85,  3.01,
-    //     9.57,  1.64,  8.83, 0.74,  5.80,
-    //     -3.49,  4.02,  9.80, 10.00,  4.27,
-    //     9.84,  0.15, -8.99, -6.02, -5.31
-	// };
+
     double A[6] = {2, -1, 0, 4, 3, -2};
 
     pinv_driver(A, m, n, k, S, Smat, Sp, U, Vt, Superb, &info_svd, USigma, Pinv);
 
     mat_ptr(Pinv, n, m);
 
-    // gesvd_driver(a, m, n, s, u, vt, superb, &info);
-
-    // mat_ptr(u, m, m);
-    // cout << endl;
-    // mat_ptr(s, 1, n);
-    // cout << endl;
-    // mat_ptr(vt, n, n);
 }
-
-
