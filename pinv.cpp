@@ -79,6 +79,27 @@ void pinv_driver(double* A, int m, int n, int k, double* S, double* Smat, double
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, n, m, m, 1.0, USigma, m, U, m, 0.0, Pinv, m);
 }
 
+void pinv_API(vector<double>& A_vec, int m, int n, vector<double>& Pinv_vec)
+{
+    int k = MINMN(m, n);
+    double* U, *Vt, *S, *Superb, *Smat, *Sp, *USigma, *Pinv, *A;
+    U = new double[m*m];
+    S = new double[MINMN(m, n)];
+    Vt = new double[n*n];
+    Superb = new double[MINMN(m,n)-1];
+    Smat = new double[m*n];
+    Sp = new double[m*n];
+    USigma = new double[m*n];
+    Pinv = new double[m*n];
+    A = new double[m*n];
+    int info_svd;
+    cblas_dcopy(m*n, &*A_vec.begin(), 1, A, 1);
+    
+    pinv_driver(A, m, n, k, S, Smat, Sp, U, Vt, Superb, &info_svd, USigma, Pinv);
+
+    cblas_dcopy(m*n, Pinv, 1, &*Pinv_vec.begin(), 1);
+}
+
 int main(void)
 {
     int m = 3;
@@ -100,5 +121,11 @@ int main(void)
     pinv_driver(A, m, n, k, S, Smat, Sp, U, Vt, Superb, &info_svd, USigma, Pinv);
 
     mat_ptr(Pinv, n, m);
+
+    vector<double> A_vec {2, -1, 0, 4, 3, -2};
+    vector<double> Pinv_vec(6);
+
+    pinv_API(A_vec, 3, 2, Pinv_vec);
+    mat_ptr(&*Pinv_vec.begin(), 2, 3);
 
 }
